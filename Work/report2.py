@@ -1,8 +1,12 @@
+#! /usr/bin/env python3
+
 # Read the data from a portfolio file and populate a list of tuples
+# Same as report but import the parse_csv function from fileparse module.
 
 import csv
 import sys
 from pprint import pprint
+from fileparse import parse_csv
 
 
 def read_portfolio(filename):
@@ -11,37 +15,16 @@ def read_portfolio(filename):
 
     The keys to each stock dictionary are 'name', 'shares' and 'price'.
     """
-    # Using zip to pair headers and values and build a dictionary
-    portfolio = []
-
-    with open(filename, 'rt') as f:
-        rows = csv.reader(f)
-        headers = next(rows)
-        for lineno, row in enumerate(rows, start=1):
-            try:
-                portfolio.append(dict(zip(headers, row)))
-            except ValueError:
-                print(f'Warning: skipped invalid entry {row} on line {lineno}')
-    return portfolio
+    return parse_csv(filename, select=[('name', str), ('shares', int), ('price', float)])
 
 
 def read_prices(filename):
     """
     Read a file of stock prices and return as a dictionary of [name, price].
     """
-    prices = []
-
-    with open(filename, 'rt') as f:
-        # the price database file has no headers
-        rows = csv.reader(f)
-        for row in rows:
-            if len(row) < 2:
-                continue
-            try:
-                prices.append(row)
-            except ValueError:
-                print(f'Warning: skipped invalid entry {row}')
-    return dict(prices)
+    prices = parse_csv(filename, select=[
+                       ('name', str), ('price', float)], headers=['name', 'price'])
+    return {entry['name']: entry['price'] for entry in prices}
 
 
 def portfolio_initial_cost(portfolio):
@@ -51,7 +34,7 @@ def portfolio_initial_cost(portfolio):
     """
     total_cost = 0
     for stock in portfolio:
-        total_cost += int(stock['shares']) * float(stock['price'])
+        total_cost += stock['shares'] * stock['price']
     return total_cost
 
 
@@ -64,7 +47,7 @@ def portfolio_current_value(portfolio, prices):
     """
     total_value = 0
     for stock in portfolio:
-        total_value += int(stock['shares']) * float(prices[stock['name']])
+        total_value += stock['shares'] * prices[stock['name']]
     return total_value
 
 
@@ -78,9 +61,9 @@ def make_report(portfolio, prices):
     report = []
     for stock in portfolio:
         name = stock['name']
-        shares = int(stock['shares'])
-        price = float(prices[name])
-        original_price = float(stock['price'])
+        shares = stock['shares']
+        price = prices[name]
+        original_price = stock['price']
         report.append((name, shares, price, price-original_price))
     return report
 
@@ -121,9 +104,17 @@ def portfolio_report(portfolio_filename, prices_filename):
     print_report(report)
 
 
-if len(sys.argv) == 2:
-    filename = sys.argv[1]
-else:
-    filename = 'Data/portfolio.csv'
+def main(cli_options=[]):
 
-portfolio_report(filename, 'Data/prices.csv')
+    if len(cli_options) == 3:
+        portfolio = cli_options[1]
+        prices = cli_options[2]
+    else:
+        portfolio = 'Data/portfolio.csv'
+        prices = 'Data/prices.csv'
+
+    portfolio_report(portfolio, prices)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
