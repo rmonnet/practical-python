@@ -1,6 +1,10 @@
 
 import csv
 from pprint import pprint
+import logging
+
+log = logging.getLogger(__name__)
+print('>>>', __name__)
 
 
 def parse_csv(filename, select=None, headers=None):
@@ -30,8 +34,9 @@ def parse_csv(filename, select=None, headers=None):
                 try:
                     row = [cvt(row[index]) for index, cvt in indices]
                     record = dict(zip(headers, row))
-                except ValueError:
-                    print(f'Warning: skipping invalid entry {row}')
+                except ValueError as error:
+                    log.warning('Skipping invalid entry %s', row)
+                    log.debug('Exception is %s', error)
             else:
                 record = dict(zip(headers, row))
 
@@ -42,6 +47,8 @@ def parse_csv(filename, select=None, headers=None):
 
 if __name__ == '__main__':
 
+    logging.basicConfig(level=logging.DEBUG)
+
     portfolio = parse_csv('Data/portfolio.csv',
                           select=[('name', str), ('shares', int), ('price', float)])
     print('Portfolio:')
@@ -51,3 +58,8 @@ if __name__ == '__main__':
                        select=[('name', str), ('price', float)], headers=['name', 'price'])
     print('Prices:')
     pprint(prices)
+
+    portfolio2 = parse_csv('Data/missing.csv',
+                           select=[('name', str), ('shares', int), ('price', float)])
+    print('Portfolio2:')
+    pprint(portfolio2)
